@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.endpoints import gas_stations
+
 app = FastAPI(
     title="AGM Systems API",
     openapi_prefix="/api/v1"
@@ -13,3 +15,5 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*']
 )
+
+app.include_router(gas_stations.router)
