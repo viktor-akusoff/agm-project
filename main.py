@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(openapi_prefix="/api/v1")
+app = FastAPI(
+    title="AGM Systems API",
+    openapi_prefix="/api/v1"
+)
 
 app.add_middleware(
     CORSMiddleware,
