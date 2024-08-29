@@ -4,7 +4,7 @@ from sqlalchemy.orm.session import sessionmaker
 from core.settings import settings
 
 conn_string = settings.SQLITE_CONN
-engine = create_engine(conn_string)
+engine = create_engine(conn_string, echo=True)    
 
 Session = sessionmaker(bind=engine, autoflush=True)
 
