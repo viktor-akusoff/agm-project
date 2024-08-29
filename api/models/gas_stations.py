@@ -1,5 +1,5 @@
 from core.database import BaseModel
-from sqlalchemy import Column, Integer, Numeric, Text, ForeignKey
+from sqlalchemy import Column, Integer, Text, ForeignKey
 
 
 class GasStation(BaseModel):
