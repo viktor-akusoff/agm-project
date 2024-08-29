@@ -1,7 +1,9 @@
 from functools import wraps
 from pyproj import Proj, transform
+from fastapi import HTTPException, UploadFile
 from enum import Enum
 from typing import Dict, List, Any
+from core.database import Session
 import json
 
 class EPSGEnum(str, Enum):
@@ -122,3 +124,29 @@ def process_result(func):
         }
 
     return wrapper
+
+
+def upload_data(data: UploadFile, Class):
+    try:
+        features = json.loads(data.file.read().decode('utf-8'))['features']
+        
+        semaphores = []
+        
+        for feature in features:
+            geomtype = feature['geometry']['type']
+            coordinates = str(feature['geometry']['coordinates'])
+            new_semaphore = {
+                "geomtype": geomtype,
+                "coordinates": coordinates,
+                **feature["properties"]
+            }
+            semaphores.append(Class(**new_semaphore))
+            
+        with Session() as session:
+            session.bulk_save_objects(semaphores)
+            session.commit()
+
+    except Exception:
+        raise HTTPException(status_code=400, detail='Incorrect JSON file!')
+    
+    return {'detail': 'success'}
