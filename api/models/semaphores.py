@@ -1,6 +1,5 @@
 from core.database import BaseModel
 from sqlalchemy import Column, Integer, Numeric, Text, Float
-from sqlalchemy.orm import Mapped, mapped_column
 
 
 class Semaphore(BaseModel):
