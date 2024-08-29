@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from core.database import Session
+from typing import Optional
+from core.utils import process_result, EPSGEnum, ModeType
 from api.models.semaphores import Semaphore
-from core.utils import coordinates_eval
 
 router = APIRouter(
     prefix='/semaphores',
@@ -9,8 +10,12 @@ router = APIRouter(
 )
 
 @router.get('')
-@coordinates_eval
-def get_semaphores(road_code: int | None = None, epsg: str | None = None):
+@process_result
+def get_semaphores(
+    road_code: Optional[int] = None,
+    epsg: Optional[EPSGEnum] = None,
+    mode: Optional[ModeType] = None,
+):
     with Session() as session:
         if road_code is not None:
             result = session.query(Semaphore).filter(Semaphore.road_code == road_code).all()

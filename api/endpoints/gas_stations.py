@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from core.database import Session
+from typing import Optional
+from core.utils import process_result, EPSGEnum, ModeType
 from api.models.gas_stations import GasStation
-from core.utils import coordinates_eval
 
 router = APIRouter(
     prefix='/gas-stations',
@@ -9,12 +10,13 @@ router = APIRouter(
 )
 
 @router.get('')
-@coordinates_eval
-def get_gas_stations(road_code: int | None = None, epsg: str | None = None):
+@process_result
+def get_gas_stations(
+    road_code: Optional[int] = None,
+    epsg: Optional[EPSGEnum] = None,
+    mode: Optional[ModeType] = None,
+):
     with Session() as session:
         if road_code is not None:
-            result = session.query(GasStation).filter(GasStation.road_code == road_code).all()
-        else:
-            result = session.query(GasStation).order_by(GasStation.road_code.desc()).all()
-            
-    return [gas_station.__dict__ for gas_station in result]
+            return session.query(GasStation).filter(GasStation.road_code == road_code).all()
+        return session.query(GasStation).order_by(GasStation.road_code.desc()).all()
