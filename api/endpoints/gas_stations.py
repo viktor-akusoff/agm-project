@@ -10,7 +10,7 @@ router = APIRouter(
 
 @router.get('')
 @coordinates_eval
-def get_gas_stations(road_code: int | None = None):
+def get_gas_stations(road_code: int | None = None, epsg: str | None = None):
     with Session() as session:
         if road_code is not None:
             return session.query(GasStation).filter(GasStation.road_code == road_code).all()
