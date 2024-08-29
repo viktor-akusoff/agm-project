@@ -5,7 +5,8 @@ from core.database import engine, BaseModel
 from api.endpoints import (
     gas_stations,
     roads,
-    semaphores
+    semaphores,
+    road_cross
 )
 
 
@@ -34,3 +35,4 @@ app.add_middleware(
 app.include_router(gas_stations.router)
 app.include_router(roads.router)
 app.include_router(semaphores.router)
+app.include_router(road_cross.router)

@@ -30,15 +30,26 @@ class ModeType(Enum):
     BOTH = 'both'
 
 
-def process_coordinates(coordinates, in_proj: Proj, out_proj: Proj):
-
-    coord_num = len(coordinates)
-    new_coordinates = list(transform(in_proj, out_proj, coordinates[1], coordinates[0]))
-
+def process_point(point, in_proj: Proj, out_proj: Proj):
+    coord_num = len(point)
+    new_point = list(transform(in_proj, out_proj, point[1], point[0]))
     if coord_num > 2:
-        new_coordinates = [*new_coordinates, coordinates[2]]
+        new_point = [*new_point, point[2]]
+    return new_point
 
-    return new_coordinates
+
+def process_line(line, in_proj: Proj, out_proj: Proj):
+    new_line = []
+    for point in line:
+        new_line.append(process_point(point, in_proj, out_proj))
+    return new_line
+        
+        
+def process_polygon(polygon, in_proj: Proj, out_proj: Proj):
+    new_polygon = []
+    for line in polygon:
+        new_polygon.append(process_line(line, in_proj, out_proj))
+    return new_polygon
 
 
 def process_geometry(obj: Dict, epsg: EPSGEnum):
@@ -57,17 +68,13 @@ def process_geometry(obj: Dict, epsg: EPSGEnum):
     out_proj = Proj(f'epsg:{epsg.value}')
     
     if geomtype == ObjectType.POINT:
+        coordinates = process_point(coordinates, in_proj, out_proj)
+
+    elif geomtype in ObjectType.LINESTRING:
+        coordinates = process_line(coordinates, in_proj, out_proj)
         
-        coordinates = process_coordinates(coordinates, in_proj, out_proj)
-
-    elif geomtype == ObjectType.LINESTRING:
-
-        new_coordinates = []
-
-        for c in coordinates:
-            new_coordinates.append(process_coordinates(c, in_proj, out_proj))
-
-        coordinates = new_coordinates
+    elif geomtype in ObjectType.POLYGON:
+        coordinates = process_polygon(coordinates, in_proj, out_proj)
 
     return {
         "type": geomtype,
