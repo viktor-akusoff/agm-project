@@ -6,7 +6,6 @@ from core.settings import settings
 conn_string = settings.SQLITE_CONN
 engine = create_engine(conn_string)
 
-Session = sessionmaker(bind=engine)
-session = Session()
+Session = sessionmaker(bind=engine, autoflush=True)
 
 class BaseModel(DeclarativeBase): pass
