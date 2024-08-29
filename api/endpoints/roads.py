@@ -8,14 +8,10 @@ router = APIRouter(
     tags=["Roads management"]
 )
 
-@router.get('/')
+@router.get('')
 @coordinates_eval
-def get_roads():
+def get_roads(road_code: int | None = None, epsg: str | None = None):
     with Session() as session:
+        if road_code is not None:
+            return session.query(Road).filter(Road.road_code == road_code).all()
         return session.query(Road).all()
-
-@router.get('/{road_code}')
-@coordinates_eval
-def get_road(road_code: int):
-    with Session() as session:
-        return session.query(Road).filter(Road.road_code == road_code).all()
