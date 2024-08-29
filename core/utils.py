@@ -110,6 +110,15 @@ def process_result(func):
             
             processed_result.append(processed_element)
 
-        return processed_result
+        return {
+            "crs": {
+                "type": "name",
+                "properties": {
+                    "name": f'EPSG:{epsg.value}'
+                }
+            },
+            "type": ObjectType.FEATURE_COLLECTION,
+            "features": processed_result
+        }
 
     return wrapper
