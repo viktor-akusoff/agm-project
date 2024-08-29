@@ -13,5 +13,8 @@ router = APIRouter(
 def get_gas_stations(road_code: int | None = None, epsg: str | None = None):
     with Session() as session:
         if road_code is not None:
-            return session.query(GasStation).filter(GasStation.road_code == road_code).all()
-        return session.query(GasStation).order_by(GasStation.road_code.desc()).all()
+            result = session.query(GasStation).filter(GasStation.road_code == road_code).all()
+        else:
+            result = session.query(GasStation).order_by(GasStation.road_code.desc()).all()
+            
+    return [gas_station.__dict__ for gas_station in result]
