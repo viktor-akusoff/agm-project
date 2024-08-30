@@ -1,7 +1,7 @@
 <template>
   <div class="agm-container">
     <div class="agm-map">
-      <ol-map ref="map" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height: 90vh">
+      <ol-map ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height: 90vh">
 
         <ol-view
           ref="view"
@@ -17,8 +17,32 @@
           <ol-source-osm />
         </ol-tile-layer>
 
+        <ol-overlay
+          v-if="showTooltip"
+          :position="helpTooltipCoord"
+          :offset="[0, 15]"
+          positioning="top-center"
+        >
+          <div class="tooltip">
+            {{ helpTooltipText }}
+          </div>
+        </ol-overlay>
+
         <ol-interaction-select
           @select="featureSelected"
+          :condition="clickCondition"
+        >
+          <ol-style>
+            <ol-style-stroke color="rgba(216,183,255,1)" :width="10"></ol-style-stroke>
+            <ol-style-fill color="rgba(216,183,255,0.75)"></ol-style-fill>
+            <ol-style-circle :radius="10">
+              <ol-style-fill color="rgba(216,183,255,1)"></ol-style-fill>
+            </ol-style-circle>
+          </ol-style>      
+        </ol-interaction-select>
+
+        <ol-interaction-select
+          @select="toggleTooltip"
           :condition="selectCondition"
         >
           <ol-style>
@@ -113,7 +137,9 @@
 </template>
  
 <script setup>
-  import { ref, inject } from "vue"
+  import { ref, inject, onMounted } from "vue"
+
+  const mapRef = ref(null);
 
   const center = ref([4338578.002510583, 5626177.3723523775])
   const projection = ref("EPSG:3857")
@@ -126,15 +152,43 @@
   const selectConditions = inject("ol-selectconditions")
 
   const selectCondition = selectConditions.pointerMove
+  const clickCondition = selectConditions.click
 
   const properties = ref({})
 
+  const helpTooltipCoord = ref(null);
+  const helpTooltipText = ref("TEST");
+
   function featureSelected(event) {
     const selected = event.selected
-    if (!selected.length) return
     const {geometry, ...props} = selected[0].values_
     properties.value = props
   }
+
+  const showTooltip = ref(false)
+
+  function toggleTooltip(event) {
+    if (event.selected.length)
+      showTooltip.value = true
+    else
+      showTooltip.value = false
+  }
+
+  function showHelpInfoOnPointermove(evt) {
+    if (evt.dragging) {
+      return;
+    }
+    helpTooltipText.value = evt.coordinate;
+    helpTooltipCoord.value = evt.coordinate;
+  }
+
+  onMounted(() => {
+    mapRef.value?.map.on("pointermove", showHelpInfoOnPointermove);
+    mapRef.value?.map.getViewport().addEventListener("mouseout", function () {
+      helpTooltipCoord.value = null;
+      helpTooltipText.value = "";
+    });
+  });
 
 </script>
  
@@ -150,5 +204,11 @@
     width: 240px;
     padding: 24px;
     font-family: sans-serif;
+  }
+  .tooltip {
+    background: rgb(187, 255, 223);
+    font-family: sans-serif;
+    padding: 5px;
+    border-radius: 5px;
   }
 </style>
