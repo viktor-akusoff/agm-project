@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from core.database import engine, BaseModel
+from core.database import engine, redis, BaseModel
 from api.endpoints import (
     gas_stations,
     roads,
@@ -16,7 +16,8 @@ async def lifespan(app: FastAPI):
     print('Creating tables')
     BaseModel.metadata.create_all(bind=engine)
     yield
-    print('Closing database')
+    print('Closing databases')
+    await redis.close()
     engine.dispose()
 
 app = FastAPI(

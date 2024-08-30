@@ -4,15 +4,15 @@ from fastapi import APIRouter, UploadFile, HTTPException
 from core.database import Session
 from typing import Optional
 from core.utils import process_result, upload_data, EPSGEnum, ModeType
-from api.models.lines import Line
+from api.models.semaphores import Semaphore
 
 router = APIRouter(
-    prefix='/lines',
-    tags=["Lines management"]
+    prefix='/semaphores',
+    tags=["Semaphores management"]
 )
 
 @router.get('')
-@process_result
+@process_result('semaphores')
 def get_semaphores(
     road_code: Optional[int] = None,
     epsg: Optional[EPSGEnum] = None,
@@ -20,10 +20,10 @@ def get_semaphores(
 ):
     with Session() as session:
         if road_code is not None:
-            return session.query(Line).filter(Line.road_code == road_code).all()
-        return session.query(Line).order_by(Line.road_code.desc()).all()
+            return session.query(Semaphore).filter(Semaphore.road_code == road_code).all()
+        return session.query(Semaphore).order_by(Semaphore.road_code.desc()).all()
 
 
 @router.post('')
 def upload_semaphore(data: UploadFile):
-    return upload_data(data, Line)
+    return upload_data(data, Semaphore)

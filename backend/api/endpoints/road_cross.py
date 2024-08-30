@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 @router.get('')
-@process_result
+@process_result('road_cross')
 def get_road_cross(
     road_code: Optional[int] = None,
     epsg: Optional[EPSGEnum] = None,

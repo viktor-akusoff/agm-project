@@ -1,9 +1,10 @@
 from functools import wraps
 from pyproj import Proj, transform
 from fastapi import HTTPException, UploadFile
+from fastapi.encoders import jsonable_encoder
 from enum import Enum
 from typing import Dict, List, Any
-from core.database import Session
+from core.database import Session, r
 import json
 
 class EPSGEnum(str, Enum):
@@ -91,46 +92,65 @@ def process_properties(obj: Dict):
     
     return cleaned_obj
 
-    
-def process_result(func):
+def process_result(redis_prefix: str):
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
+    def decorator(func):
 
-        result = func(*args, **kwargs)
-        
-        epsg = kwargs.get('epsg')
-        epsg = EPSGEnum(epsg) if epsg is not None else EPSGEnum.EPSG4326
-        
-        mode = kwargs.get('mode')
-        mode = ModeType(mode) if mode is not None else ModeType.BOTH
-        
-        processed_result = []
-        
-        for element in result:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
             
-            processed_element: Dict[str, Any] = {'type': ObjectType.FEATURE}
+            road_code = kwargs.get('road_code')
             
-            if mode in [ModeType.GEOM_ONLY, ModeType.BOTH]:
-                processed_element['geometry'] = process_geometry(element.__dict__, epsg)
+            epsg = kwargs.get('epsg')
+            epsg = EPSGEnum(epsg) if epsg is not None else EPSGEnum.EPSG4326
+            
+            mode = kwargs.get('mode')
+            mode = ModeType(mode) if mode is not None else ModeType.BOTH
+            
+            redis_key = f'{redis_prefix}_{epsg}_{mode}'
+            
+            if road_code:
+                redis_key += f'_{road_code}'
                 
-            if mode in [ModeType.PROP_ONLY, ModeType.BOTH]:
-                processed_element['properties'] = process_properties(element.__dict__)
+            cache = r.get(redis_key)
+
+            if cache is not None:
+                return json.loads(cache)
+                
+            result = func(*args, **kwargs)
             
-            processed_result.append(processed_element)
+            processed_result = []
+            
+            for element in result:
+                
+                processed_element: Dict[str, Any] = {'type': ObjectType.FEATURE}
+                
+                if mode in [ModeType.GEOM_ONLY, ModeType.BOTH]:
+                    processed_element['geometry'] = process_geometry(element.__dict__, epsg)
+                    
+                if mode in [ModeType.PROP_ONLY, ModeType.BOTH]:
+                    processed_element['properties'] = process_properties(element.__dict__)
+                
+                processed_result.append(processed_element)
 
-        return {
-            "crs": {
-                "type": "name",
-                "properties": {
-                    "name": f'EPSG:{epsg.value}'
-                }
-            },
-            "type": ObjectType.FEATURE_COLLECTION,
-            "features": processed_result
-        }
+            feature_collection = {
+                "crs": {
+                    "type": "name",
+                    "properties": {
+                        "name": f'EPSG:{epsg.value}'
+                    }
+                },
+                "type": ObjectType.FEATURE_COLLECTION,
+                "features": processed_result
+            }
+            
+            r.set(redis_key, json.dumps(jsonable_encoder(feature_collection)))
+            
+            return feature_collection
 
-    return wrapper
+        return wrapper
+    
+    return decorator
 
 
 def upload_data(data: UploadFile, Class):

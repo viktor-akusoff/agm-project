@@ -1,12 +1,21 @@
 services:
-  web:
-    build: ./fastapi
+  backend:
+    build: ./backend
     ports:
       - "8000:8000"
     depends_on:
       - redis
     volumes:
       - ./db:/app/db
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+        - action: rebuild
+          path: ./backend/requirements.txt
+          target: /app/requirements.txt
+
   redis:
     image: "redis:alpine"
     ports:
