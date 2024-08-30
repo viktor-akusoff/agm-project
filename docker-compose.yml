@@ -1,0 +1,15 @@
+services:
+  web:
+    build: ./fastapi
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    volumes:
+      - ./db:/app/db
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+volumes:
+  db:
