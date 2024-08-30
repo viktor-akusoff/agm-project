@@ -9,6 +9,7 @@ import json
 
 class EPSGEnum(str, Enum):
     EPSG4326 = '4326'
+    EPSG3857 = '3857'
     EPSG326327 = '32637'
     EPSG32638 = '32638'
     
