@@ -3,3 +3,4 @@ SQLAlchemy==2.0.32
 pydantic_settings==2.4.0
 pyproj==3.6.1
 redis==5.0.8
+pillow==10.4.0

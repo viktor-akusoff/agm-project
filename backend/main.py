@@ -7,7 +7,8 @@ from api.endpoints import (
     roads,
     semaphores,
     road_cross,
-    lines
+    lines,
+    panorama
 )
 
 
@@ -39,3 +40,4 @@ app.include_router(roads.router)
 app.include_router(semaphores.router)
 app.include_router(road_cross.router)
 app.include_router(lines.router)
+app.include_router(panorama.router)
