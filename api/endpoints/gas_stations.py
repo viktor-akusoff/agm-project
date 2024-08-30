@@ -1,7 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile
 from core.database import Session
 from typing import Optional
-from core.utils import process_result, EPSGEnum, ModeType
+from core.utils import process_result, upload_data, EPSGEnum, ModeType
 from api.models.gas_stations import GasStation
 
 router = APIRouter(
@@ -20,3 +20,8 @@ def get_gas_stations(
         if road_code is not None:
             return session.query(GasStation).filter(GasStation.road_code == road_code).all()
         return session.query(GasStation).order_by(GasStation.road_code.desc()).all()
+    
+    
+@router.post('')
+def upload_semaphore(data: UploadFile):
+    return upload_data(data, GasStation)
