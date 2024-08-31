@@ -151,7 +151,7 @@
 
   const center = ref([4338578.002510583, 5626177.3723523775])
   const projection = ref("EPSG:3857")
-  const zoom = ref(6)
+  const zoom = ref(7)
   const rotation = ref(0)
 
   const format = inject("ol-format")
