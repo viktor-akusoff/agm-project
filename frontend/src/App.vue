@@ -137,13 +137,16 @@
   <div class="shadow-overlay" v-show="showPanorama">
     <div class="window">
       <button @click="showPanorama = false">x</button>
-      <div id="viewer3d" style="width: 100%; height: 100%;"></div>
+      <div ref="canvasContainer" style="width: 100%; height: 100%"></div>
     </div>
   </div>
 </template>
  
 <script setup>
-  import { ref, inject, onMounted } from "vue"
+  import { ref, inject, onMounted, watch, nextTick } from "vue"
+
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
   const mapRef = ref(null)
 
@@ -191,17 +194,76 @@
     helpTooltipCoord.value = evt.coordinate;
   }
 
+  const canvasContainer = ref(null);
+  let scene, camera, renderer, controls, geometry, textureLoader, texture, material, animate, sphere;
+  watch(showPanorama, (newValue) => {
+    if (newValue == false) {
+      if (renderer) renderer.dispose();
+      if (scene) scene.clear();
+      if (camera) camera = null;
+      if (controls) controls.dispose();
+      if (geometry) geometry.dispose();
+      if (texture) texture.dispose();
+      if (material) material.dispose();
+      canvasContainer.value.innerHTML = '';
+    }
+    nextTick(() => {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(
+        75,
+        canvasContainer.value.clientWidth / canvasContainer.value.clientHeight,
+        0.1,
+        1000
+      );
+      renderer = new THREE.WebGLRenderer();
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      
+      renderer.setSize(
+        canvasContainer.value.clientWidth,
+        canvasContainer.value.clientHeight
+      );
+      canvasContainer.value.appendChild(renderer.domElement);
+
+      geometry = new THREE.SphereGeometry(15, 128, 128);
+
+      textureLoader = new THREE.TextureLoader();
+      texture = textureLoader.load('http://127.0.0.1:8000/api/v1/panorama'); // Replace with your texture path
+
+      material = new THREE.MeshBasicMaterial({ map: texture });
+
+      material.side = THREE.DoubleSide;
+
+      sphere = new THREE.Mesh(geometry, material);
+      
+      scene.add(sphere);
+
+      camera.position.z = 0.05;
+
+      animate = function () {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      };
+
+      animate();
+    })
+  })
+
   onMounted(() => {
+
     mapRef.value?.map.on("pointermove", showHelpInfoOnPointermove);
+
     mapRef.value?.map.getViewport().addEventListener("mouseout", function () {
       helpTooltipCoord.value = null;
       helpTooltipText.value = "";
     });
+
     mapRef.value?.map.getInteractions().forEach(interaction => {
       if (interaction?.constructor.name === "DoubleClickZoom") {
         mapRef.value.map.removeInteraction(interaction);
       }
     });
+
   });
 
 
