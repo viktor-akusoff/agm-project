@@ -249,9 +249,45 @@
         geometryList.push(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(processed_coordinates), 1024, 0.5, 8, false), lineMaterial))
       }
     })
-    geometryList.forEach((g) => {
-      scene.add(g)
-    })
+  }
+
+  async function fetchPoly(center, y) {
+    const material = new THREE.MeshBasicMaterial({ 
+      color: 0x0000ff, 
+      side: THREE.DoubleSide, // Fill both sides of the shape
+      depthTest: false        // Optional: If you want it to always be on top
+    });
+
+    const response = await axios('http://127.0.0.1:8000/api/v1/road-cross?epsg=3857');
+    let features = response.data.features;
+
+    features.forEach((feature) => {
+      let shape = new THREE.Shape();
+      feature.geometry.coordinates[0].forEach((coordinate, index) => {
+        let processed_coordinate = [...coordinate];
+        processed_coordinate[0] -= center[0];
+        processed_coordinate[2] = processed_coordinate[1] - center[1];
+        processed_coordinate[1] = y;
+
+        const [x, _, z] = processed_coordinate;
+
+        if (Math.abs(x) < 1000 && Math.abs(z) < 1000) {
+          if (index === 0) {
+            shape.moveTo(z, x);
+          } else {
+            shape.lineTo(z, x); 
+          }
+        }
+      });
+
+      if (shape.getPoints().length > 2) {
+        let geometryShape = new THREE.ShapeGeometry(shape);
+        let meshShape = new THREE.Mesh(geometryShape, material);
+        meshShape.rotateX(Math.PI/2)
+        meshShape.position.y = y
+        geometryList.push(meshShape);
+      }
+    });
   }
 
   async function buildPanorama() {
@@ -305,6 +341,10 @@
     nextTick(async () => {
       await buildPanorama()
       await fetchLines(event.coordinate, -8)
+      await fetchPoly(event.coordinate, -8)
+        geometryList.forEach((g) => {
+        scene.add(g)
+      })
     })
   }
 
