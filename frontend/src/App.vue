@@ -136,8 +136,9 @@
   </div>
   <div class="shadow-overlay" v-show="showPanorama">
     <div class="window">
-      <button @click="showPanorama = false">x</button>
+      <button class="close" @click="showPanorama = false">x</button>
       <div ref="canvasContainer" style="width: 100%; height: 100%"></div>
+      <button @click="resetCamera">Домой</button>
     </div>
   </div>
 </template>
@@ -196,6 +197,14 @@
 
   const canvasContainer = ref(null);
   let scene, camera, renderer, controls, geometry, textureLoader, texture, material, animate, sphere;
+
+  function resetCamera() {
+    camera.position.z = 5;
+    camera.rotation.x = 0;
+    camera.rotation.y = 0;
+    camera.rotation.z = 0;
+  }
+
   watch(showPanorama, (newValue) => {
     if (newValue == false) {
       if (renderer) renderer.dispose();
@@ -218,6 +227,8 @@
       renderer = new THREE.WebGLRenderer();
 
       controls = new OrbitControls(camera, renderer.domElement);
+
+      controls.maxDistance = 7;
       
       renderer.setSize(
         canvasContainer.value.clientWidth,
@@ -230,6 +241,9 @@
       textureLoader = new THREE.TextureLoader();
       texture = textureLoader.load('http://127.0.0.1:8000/api/v1/panorama'); // Replace with your texture path
 
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.repeat.x = - 1;
+
       material = new THREE.MeshBasicMaterial({ map: texture });
 
       material.side = THREE.DoubleSide;
@@ -238,7 +252,7 @@
       
       scene.add(sphere);
 
-      camera.position.z = 0.05;
+      resetCamera();
 
       animate = function () {
         requestAnimationFrame(animate);
@@ -248,7 +262,7 @@
       animate();
     })
   })
-
+ 
   onMounted(() => {
 
     mapRef.value?.map.on("pointermove", showHelpInfoOnPointermove);
@@ -312,10 +326,11 @@
     height: 75vh;
     box-sizing: border-box;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
-  .window button {
+  .window .close {
     background: none;
     border: none;
     font-family: sans-serif;
