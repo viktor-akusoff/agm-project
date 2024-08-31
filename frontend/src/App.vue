@@ -1,7 +1,7 @@
 <template>
   <div class="agm-container">
     <div class="agm-map">
-      <ol-map ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height: 90vh">
+      <ol-map ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height: 90vh" @dblclick="showPanorama = true">
 
         <ol-view
           ref="view"
@@ -134,12 +134,20 @@
       </div>
     </div>
   </div>
+  <div class="shadow-overlay" v-show="showPanorama">
+    <div class="window">
+      <button @click="showPanorama = false">x</button>
+      <div id="viewer3d" style="width: 100%; height: 100%;"></div>
+    </div>
+  </div>
 </template>
  
 <script setup>
   import { ref, inject, onMounted } from "vue"
 
-  const mapRef = ref(null);
+  const mapRef = ref(null)
+
+  const showPanorama = ref(false)
 
   const center = ref([4338578.002510583, 5626177.3723523775])
   const projection = ref("EPSG:3857")
@@ -161,6 +169,7 @@
 
   function featureSelected(event) {
     const selected = event.selected
+    if (!selected.length) return
     const {geometry, ...props} = selected[0].values_
     properties.value = props
   }
@@ -188,7 +197,14 @@
       helpTooltipCoord.value = null;
       helpTooltipText.value = "";
     });
+    mapRef.value?.map.getInteractions().forEach(interaction => {
+      if (interaction?.constructor.name === "DoubleClickZoom") {
+        mapRef.value.map.removeInteraction(interaction);
+      }
+    });
   });
+
+
 
 </script>
  
@@ -210,5 +226,42 @@
     font-family: sans-serif;
     padding: 5px;
     border-radius: 5px;
+  }
+  .shadow-overlay {
+    background-color: rgba(0,0,0,0.5);
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 1000;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+  .window {
+    position: relative;
+    border-radius: 5px;
+    background-color: white;
+    padding: 36px;
+    width: 75vw;
+    height: 75vh;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .window button {
+    background: none;
+    border: none;
+    font-family: sans-serif;
+    font-size: 24px;
+    color: #121212;
+    cursor: pointer;
+    position: absolute;
+    top: 8px;
+    right: 8px;
   }
 </style>
