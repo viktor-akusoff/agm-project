@@ -1,7 +1,7 @@
 <template>
   <div class="agm-container">
     <div class="agm-map">
-      <ol-map ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height: 90vh" @dblclick="showPanorama = true">
+      <ol-map ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height: 90vh" @dblclick="togglePanorama">
 
         <ol-view
           ref="view"
@@ -145,7 +145,7 @@
  
 <script setup>
   import { ref, inject, onMounted, watch, nextTick } from "vue"
-
+  import axios from 'axios';
   import * as THREE from 'three';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
@@ -196,7 +196,9 @@
   }
 
   const canvasContainer = ref(null);
-  let scene, camera, renderer, controls, geometry, textureLoader, texture, material, animate, sphere;
+  let animationId = null;
+  let scene, camera, renderer, controls, geometry, textureLoader, texture, material, animate, sphere, lineMaterial, lineGeometry;
+  let geometryList = []
 
   function resetCamera() {
     camera.position.z = 5;
@@ -207,6 +209,7 @@
 
   watch(showPanorama, (newValue) => {
     if (newValue == false) {
+      cancelAnimationFrame(animationId);
       if (renderer) renderer.dispose();
       if (scene) scene.clear();
       if (camera) camera = null;
@@ -214,55 +217,97 @@
       if (geometry) geometry.dispose();
       if (texture) texture.dispose();
       if (material) material.dispose();
+      if (lineMaterial) lineMaterial.dispose();
+      if (lineGeometry) lineGeometry.dispose();
+      geometryList = []
       canvasContainer.value.innerHTML = '';
     }
-    nextTick(() => {
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(
-        75,
-        canvasContainer.value.clientWidth / canvasContainer.value.clientHeight,
-        0.1,
-        1000
-      );
-      renderer = new THREE.WebGLRenderer();
-
-      controls = new OrbitControls(camera, renderer.domElement);
-
-      controls.maxDistance = 7;
-      
-      renderer.setSize(
-        canvasContainer.value.clientWidth,
-        canvasContainer.value.clientHeight
-      );
-      canvasContainer.value.appendChild(renderer.domElement);
-
-      geometry = new THREE.SphereGeometry(15, 128, 128);
-
-      textureLoader = new THREE.TextureLoader();
-      texture = textureLoader.load('http://127.0.0.1:8000/api/v1/panorama'); // Replace with your texture path
-
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.repeat.x = - 1;
-
-      material = new THREE.MeshBasicMaterial({ map: texture });
-
-      material.side = THREE.DoubleSide;
-
-      sphere = new THREE.Mesh(geometry, material);
-      
-      scene.add(sphere);
-
-      resetCamera();
-
-      animate = function () {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
-      };
-
-      animate();
-    })
   })
- 
+
+  async function fetchLines(center, y) {
+    const lineMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x00aa00, 
+      depthTest: false 
+    });
+    const response = await axios('http://127.0.0.1:8000/api/v1/lines?epsg=3857')
+    let features = response.data.features
+    features.forEach((feature)=>{
+      let processed_coordinates = []
+      feature.geometry.coordinates.forEach((coordinate) => {
+        let processed_coordinate = coordinate
+        processed_coordinate[0] -= center[0]
+        processed_coordinate[2] = processed_coordinate[1] - center[1]
+        processed_coordinate[1] = y
+        const temp = processed_coordinate[0]
+        processed_coordinate[0] = processed_coordinate[2]
+        processed_coordinate[2] = temp
+        if (Math.abs(processed_coordinate[0]) < 1000 && Math.abs(processed_coordinate[2]) < 1000) {
+          processed_coordinates.push(new THREE.Vector3(...processed_coordinate))
+        }
+      })
+      if (processed_coordinates.length > 0) {
+        geometryList.push(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(processed_coordinates), 1024, 0.5, 8, false), lineMaterial))
+      }
+    })
+    geometryList.forEach((g) => {
+      scene.add(g)
+    })
+  }
+
+  async function buildPanorama() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(
+      75,
+      canvasContainer.value.clientWidth / canvasContainer.value.clientHeight,
+      0.1,
+      50
+    );
+    renderer = new THREE.WebGLRenderer();
+
+    controls = new OrbitControls(camera, renderer.domElement);
+
+    controls.maxDistance = 7;
+    
+    renderer.setSize(
+      canvasContainer.value.clientWidth,
+      canvasContainer.value.clientHeight
+    );
+    canvasContainer.value.appendChild(renderer.domElement);
+
+    geometry = new THREE.SphereGeometry(8, 128, 128);
+
+    textureLoader = new THREE.TextureLoader();
+    texture = await textureLoader.load('http://127.0.0.1:8000/api/v1/panorama'); // Replace with your texture path
+
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.repeat.x = - 1;
+
+    material = new THREE.MeshBasicMaterial({ map: texture });
+
+    material.side = THREE.DoubleSide;
+
+    sphere = new THREE.Mesh(geometry, material);
+    
+    scene.add(sphere);
+
+    resetCamera();
+
+    animate = function () {
+      animationId = requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    };
+
+    animate();
+  }
+
+  async function togglePanorama(event) {
+    showPanorama.value = true
+    nextTick(async () => {
+      await buildPanorama()
+      await fetchLines(event.coordinate, -8)
+    })
+  }
+
   onMounted(() => {
 
     mapRef.value?.map.on("pointermove", showHelpInfoOnPointermove);
@@ -279,8 +324,6 @@
     });
 
   });
-
-
 
 </script>
  
