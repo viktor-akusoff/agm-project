@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, UploadFile
-from core.database import Session
+from core.database import Session, r
 from core.utils import process_result, upload_data, EPSGEnum, ModeType
 from api.models.roads import Road
 
@@ -24,4 +24,6 @@ def get_roads(
 
 @router.post('')
 def upload_semaphore(data: UploadFile):
+    for key in r.scan_iter("roads*"):
+        r.delete(key)
     return upload_data(data, Road)

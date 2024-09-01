@@ -1,7 +1,7 @@
 import io
 import json
 from fastapi import APIRouter, UploadFile, HTTPException
-from core.database import Session
+from core.database import Session, r
 from typing import Optional
 from core.utils import process_result, upload_data, EPSGEnum, ModeType
 from api.models.lines import Line
@@ -26,4 +26,6 @@ def get_semaphores(
 
 @router.post('')
 def upload_semaphore(data: UploadFile):
+    for key in r.scan_iter("lines*"):
+        r.delete(key)
     return upload_data(data, Line)

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile
-from core.database import Session
+from core.database import Session, r
 from typing import Optional
 from core.utils import process_result, upload_data, EPSGEnum, ModeType
 from api.models.gas_stations import GasStation
@@ -24,4 +24,6 @@ def get_gas_stations(
     
 @router.post('')
 def upload_semaphore(data: UploadFile):
+    for key in r.scan_iter('gas_stations*'):
+        r.delete(key)
     return upload_data(data, GasStation)

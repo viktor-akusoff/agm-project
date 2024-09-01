@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from core.database import engine, redis, BaseModel
+from core.database import engine, r, BaseModel
 from api.endpoints import (
     gas_stations,
     roads,
@@ -18,7 +18,6 @@ async def lifespan(app: FastAPI):
     BaseModel.metadata.create_all(bind=engine)
     yield
     print('Closing databases')
-    await redis.close()
     engine.dispose()
 
 app = FastAPI(
