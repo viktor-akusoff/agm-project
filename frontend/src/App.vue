@@ -254,8 +254,8 @@
   async function fetchPoly(center, y) {
     const material = new THREE.MeshBasicMaterial({ 
       color: 0x0000ff, 
-      side: THREE.DoubleSide, // Fill both sides of the shape
-      depthTest: false        // Optional: If you want it to always be on top
+      side: THREE.DoubleSide,
+      depthTest: false
     });
 
     const response = await axios('http://127.0.0.1:8000/api/v1/road-cross?epsg=3857');
@@ -312,8 +312,9 @@
 
     geometry = new THREE.SphereGeometry(8, 128, 128);
 
-    textureLoader = new THREE.TextureLoader();
-    texture = await textureLoader.load('http://127.0.0.1:8000/api/v1/panorama'); // Replace with your texture path
+    textureLoader = new THREE.TextureLoader()
+    textureLoader.setCrossOrigin('anonymous')
+    texture = await textureLoader.load('http://127.0.0.1:8000/api/v1/panorama?part=0'); // Replace with your texture path
 
     texture.wrapS = THREE.RepeatWrapping;
     texture.repeat.x = - 1;
