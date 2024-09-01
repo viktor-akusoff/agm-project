@@ -23,7 +23,7 @@ def get_roads(
     
 
 @router.post('')
-def upload_semaphore(data: UploadFile):
+def upload_roads(data: UploadFile):
     for key in r.scan_iter("roads*"):
         r.delete(key)
     return upload_data(data, Road)

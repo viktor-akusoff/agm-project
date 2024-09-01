@@ -23,7 +23,7 @@ def get_gas_stations(
     
     
 @router.post('')
-def upload_semaphore(data: UploadFile):
+def upload_gas_station(data: UploadFile):
     for key in r.scan_iter('gas_stations*'):
         r.delete(key)
     return upload_data(data, GasStation)

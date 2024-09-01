@@ -13,7 +13,7 @@ router = APIRouter(
 
 @router.get('')
 @process_result('lines')
-def get_semaphores(
+def get_lines(
     road_code: Optional[int] = None,
     epsg: Optional[EPSGEnum] = None,
     mode: Optional[ModeType] = None,
@@ -25,7 +25,7 @@ def get_semaphores(
 
 
 @router.post('')
-def upload_semaphore(data: UploadFile):
+def upload_lines(data: UploadFile):
     for key in r.scan_iter("lines*"):
         r.delete(key)
     return upload_data(data, Line)
